@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Controle de Estoque</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root{--primary:#0b74de;--bg:#f6f7fb;--card:#fff;--muted:#666}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Helvetica,Arial,sans-serif;background:var(--bg);color:#222;-webkit-font-smoothing:antialiased}
+  header{background:var(--primary);color:white;padding:14px 16px;font-weight:600;display:flex;align-items:center;gap:12px}
+  .container{padding:12px;max-width:900px;margin:0 auto}
+  .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 4px 12px rgba(10,10,20,0.06);margin-bottom:12px}
+  .row{display:flex;gap:8px;align-items:center}
+  .search{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9f0}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;text-align:left;border-bottom:1px solid #f0f2f7;font-size:14px}
+  .btn{padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+  .btn-primary{background:var(--primary);color:white}
+  .btn-ghost{background:transparent;border:1px solid #e6e9f0;color:var(--muted)}
+  .qty{min-width:64px;text-align:center;padding:6px;border-radius:8px;border:1px solid #eee;background:#fafbff}
+  footer{position:fixed;left:0;right:0;bottom:0;background:white;padding:8px 12px;display:flex;gap:6px;justify-content:space-around;border-top:1px solid #eee}
+  footer button{flex:1;padding:8px;border-radius:8px;border:0;background:transparent;font-size:13px}
+  footer button.active{background:linear-gradient(90deg,var(--primary),#0a66c2);color:white}
+  .badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:12px;background:#f0f7ff;color:var(--primary);border:1px solid #d8eafc}
+  .small{font-size:12px;color:var(--muted)}
+  @media(min-width:900px){
+    footer{position:static;margin-top:12px}
+    .container{padding:24px}
+  }
+  .actions{display:flex;gap:6px;justify-content:flex-end}
+  .item-name{font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:18px">Controle de Estoque</div>
+  <div style="margin-left:auto" class="small">PWA • Sem senha</div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="globalSearch" class="search" placeholder="Procurar item..." oninput="renderCurrent()" />
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" id="importBtn">Importar CSV</button>
+        <button class="btn btn-ghost" id="exportBtn">Exportar CSV</button>
+        <button class="btn btn-ghost" id="resetBtn">Resetar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainContent" class="card">
+    <!-- Dynamic content -->
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:8px;align-items:center;flex-direction:column">
+      <div style="width:100%"><strong>Adicionar / Atualizar item</strong></div>
+      <input id="cadName" placeholder="Nome do item" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9f0;margin-top:8px"/>
+      <div style="display:flex;gap:8px;width:100%;margin-top:8px">
+        <input id="cadCat" placeholder="Categoria" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+        <input id="cadUn" placeholder="Unidade (kg,un,l)" style="width:120px;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+      </div>
+      <div style="display:flex;gap:8px;width:100%;margin-top:8px">
+        <input id="cadCons" placeholder="Consumo diário (opcional)" type="number" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+        <input id="cadMinR" placeholder="Mín Rest (opcional)" type="number" style="width:120px;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+        <input id="cadMinS" placeholder="Mín Sede (opcional)" type="number" style="width:120px;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+      </div>
+      <div style="display:flex;gap:8px;width:100%;margin-top:8px">
+        <input id="cadQtyR" placeholder="Qtd Restaurante (opcional)" type="number" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+        <input id="cadQtyS" placeholder="Qtd Sede (opcional)" type="number" style="width:120px;padding:10px;border-radius:8px;border:1px solid #e6e9f0"/>
+        <button class="btn btn-primary" id="saveItemBtn">Salvar item</button>
+      </div>
+      <div class="small" style="width:100%;text-align:left;margin-top:8px">Itens começam zerados. Você pode editar quantidades e eles salvam automaticamente no dispositivo.</div>
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+</div>
+
+<footer>
+  <button id="tabRest" class="active">Restaurante</button>
+  <button id="tabSede">Sede</button>
+  <button id="tabLogs">Logs</button>
+  <button id="tabRel">Relatório</button>
+  <button id="tabCad">Cadastro</button>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const KEY = 'estoque_app_final_v1';
+
+// --- Parte 1: carregar CSV e parse ---
+async function fetchInitialCSV(){
+  try{
+    const r = await fetch('estoque.csv'); // <- CSV na raiz
+    if(!r.ok) return null;
+    const txt = await r.text();
+    return parseCSV(txt);
+  }catch(e){
+    return null;
+  }
+}
+
+function parseCSV(txt){
+  const lines = txt.trim().split(/\r?\n/);
+  if(lines.length<2) return [];
+  const headers = lines[0].split(',').map(h=>h.trim());
+  return lines.slice(1).map(l=>{
+    const cols = l.split(',');
+    const obj = {};
+    headers.forEach((h,i)=> obj[h]=cols[i]===undefined? '': cols[i].trim());
+    ['consumo_diario','minimo_restaurante','minimo_sede','quantidade_restaurante','quantidade_central'].forEach(k=>{
+      if(obj[k]===undefined || obj[k]==='' ) obj[k]=0;
+      else obj[k]=Number(obj[k]);
+    });
+    return obj;
+  });
+}
+
+function save(state){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function load(){ try{return JSON.parse(localStorage.getItem(KEY));}catch(e){return null;} }
+
+async function init(){
+  let state = load();
+  if(!state){
+    const arr = await fetchInitialCSV();
+    state = { items: {}, logs: [] };
+    if(arr && arr.length){
+      arr.forEach(it=>{
+        state.items[it.nome] = {
+          nome: it.nome,
+          categoria: it.categoria || '',
+          unidade: it.unidade || '',
+          consumo_diario: Number(it.consumo_diario||0),
+          minimo_restaurante: Number(it.minimo_restaurante||0),
+          minimo_sede: Number(it.minimo_sede||0),
+          quantidade_restaurante: Number(it.quantidade_restaurante||0),
+          quantidade_central: Number(it.quantidade_central||0)
+        };
+      });
+    }
+    save(state);
+  }
+  window._state = state;
+  renderCurrent();
+}
+// --- Parte 2: renderização, ações e PDF ---
+function addLog(text){
+  const state = load();
+  state.logs.unshift({ ts: new Date().toISOString(), text });
+  if(state.logs.length>1000) state.logs.length = 1000;
+  save(state);
+}
+
+function renderCurrent(){
+  const active = document.querySelector('footer button.active').id;
+  const state = load();
+  if(!state){ document.getElementById('mainContent').innerHTML = '<div class="small">Sem dados. Importe CSV inicial.</div>'; return; }
+  const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+  if(active==='tabRest'){
+    renderList('restaurante', state, q);
+  } else if(active==='tabSede'){
+    renderList('sede', state, q);
+  } else if(active==='tabLogs'){
+    renderLogs(state);
+  } else if(active==='tabRel'){
+    renderReport(state);
+  } else if(active==='tabCad'){
+    renderCadastro(state);
+  }
+}
+
+function renderList(location, state, q=''){
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><strong>'+ (location==='restaurante'?'Estoque — Restaurante':'Estoque — Sede') +'</strong></div><div class="small">Toque em + / - para ajustar, botão transferir para mover</div></div>';
+  html += '<table><thead><tr><th>Item</th><th>Qtd</th><th>Mín</th><th style="text-align:right">Ações</th></tr></thead><tbody>';
+  Object.values(state.items).forEach(it=>{
+    if(q && !it.nome.toLowerCase().includes(q) && !it.categoria.toLowerCase().includes(q)) return;
+    const qty = location==='restaurante'? it.quantidade_restaurante : it.quantidade_central;
+    const minimo = location==='restaurante'? it.minimo_restaurante : it.minimo_sede;
+    let status='';
+    if(minimo>0){
+      if(qty<=minimo) status=' <span class="badge" style="background:#ffdede;color:#a00">ABAIXO</span>';
+      else if(qty <= Math.ceil(minimo*1.5)) status=' <span class="badge">PRÓXIMO</span>';
+    }
+    html += '<tr>';
+    html += '<td><div class="item-name">'+it.nome+'</div><div class="small">'+(it.categoria||'')+'</div></td>';
+    html += '<td><div class="qty">'+qty+'</div></td>';
+    html += '<td>'+(minimo>0?minimo:'—') + status +'</td>';
+    html += '<td style="text-align:right">';
+    html += '<button class="btn btn-ghost" onclick="changeQtyModal(\''+it.nome+'\',\''+location+'\', -1)">-</button>';
+    html += '<button class="btn btn-primary" onclick="changeQtyModal(\''+it.nome+'\',\''+location+'\', 1)">+</button> ';
+    if(location==='restaurante'){
+      html += '<button class="btn btn-ghost" onclick="transferFromSede(\''+it.nome+'\')">Transferir</button>';
+    } else {
+      html += '<button class="btn btn-ghost" onclick="transferToRestaurante(\''+it.nome+'\')">Enviar p/ Rest</button>';
+    }
+    html += '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function changeQtyModal(name, location, sign){
+  const amt = prompt('Quantidade (número inteiro). Use 1 ou mais.'); 
+  if(amt===null) return;
+  const n = Number(amt);
+  if(isNaN(n) || n<=0) return alert('Quantidade inválida');
+  changeQty(name, location, sign * n);
+}
+
+function changeQty(name, location, delta){
+  const state = load();
+  if(!state || !state.items[name]) return alert('Item não encontrado');
+  const it = state.items[name];
+  if(location==='restaurante'){
+    it.quantidade_restaurante = Math.max(0, (it.quantidade_restaurante||0) + delta);
+    const text = delta>0? 'Restaurante recebeu ' + delta + ' de ' + name : 'Restaurante consumiu ' + Math.abs(delta) + ' de ' + name;
+    addLog(text);
+  } else {
+    it.quantidade_central = Math.max(0, (it.quantidade_central||0) + delta);
+    const text = delta>0? 'Sede recebeu ' + delta + ' de ' + name : 'Sede reduziu ' + Math.abs(delta) + ' de ' + name;
+    addLog(text);
+  }
+  save(state);
+  renderCurrent();
+}
+
+function transferFromSede(name){
+  const state = load();
+  const it = state.items[name];
+  if(!it) return alert('Item não encontrado');
+  const qty = Number(prompt('Quantidade a transferir da Sede para Restaurante (número inteiro):', '1'));
+  if(qty===null) return;
+  if(isNaN(qty) || qty<=0) return alert('Quantidade inválida');
+  if(it.quantidade_central < qty) return alert('Sede não tem essa quantidade');
+  it.quantidade_central -= qty;
+  it.quantidade_restaurante = (it.quantidade_restaurante||0) + qty;
+  addLog('Transferência: ' + qty + ' de ' + name + ' Sede → Restaurante');
+  save(state);
+  renderCurrent();
+}
+
+function transferToRestaurante(name){
+  transferFromSede(name);
+}
+
+function renderLogs(state){
+  let html = '<h3>Logs (mais recentes)</h3>';
+  html += '<div class="small" style="margin-bottom:8px">Formato: "Restaurante consumiu X de Item"</div>';
+  html += '<table><thead><tr><th>Data</th><th>Evento</th></tr></thead><tbody>';
+  state.logs.forEach(l=>{
+    html += '<tr><td>'+ new Date(l.ts).toLocaleString() +'</td><td>'+ l.text +'</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function renderCadastro(state){
+  let html = '<h3>Cadastro</h3>';
+  html += '<div class="small" style="margin-bottom:8px">Use o formulário abaixo para criar ou editar itens.</div>';
+  html += '<table><thead><tr><th>Nome</th><th>Categoria</th><th>Unidade</th><th>Qtd R</th><th>Qtd S</th><th>Ações</th></tr></thead><tbody>';
+  Object.values(state.items).forEach(it=>{
+    html += '<tr>';
+    html += '<td>'+it.nome+'</td>';
+    html += '<td>'+ (it.categoria || '') +'</td>';
+    html += '<td>'+ (it.unidade || '') +'</td>';
+    html += '<td>'+(it.quantidade_restaurante||0)+'</td>';
+    html += '<td>'+(it.quantidade_central||0)+'</td>';
+    html += '<td><button class="btn btn-ghost" onclick="editItem(\''+it.nome+'\')">Editar</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div style="margin-top:8px">Preencha o formulário à esquerda e clique em Salvar item.</div>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function renderReport(state){
+  let html = '<h3>Relatório - Estoque Completo Sede</h3>';
+  html += '<div class="small" style="margin-bottom:8px">Clique para gerar o PDF com todos os itens da Sede.</div>';
+  html += '<div><button class="btn btn-primary" onclick="generatePDF()"><strong>Gerar PDF</strong></button></div>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function generatePDF(){
+  const state = load();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt',format:'a4'});
+  let y = 40;
+
+  doc.setFontSize(16);
+  doc.text('Relatório Completo de Estoque - Sete', 40, y); y+=25;
+  doc.setFontSize(10);
+  doc.text('Data: ' + new Date().toLocaleString(), 40, y); y+=20;
+  doc.text('Item — Quantidade Atual', 40, y); y+=18;
+
+  Object.values(state.items).forEach(it=>{
+    const q = it.quantidade_central || 0;
+    const line = `${it.nome} — ${q}`;
+    doc.text(line, 40, y); y+=14;
+    if(y>760){ doc.addPage(); y=40; }
+  });
+
+  doc.save('relatorio_sete.pdf');
+  addLog('Gerou relatório PDF completo - Sete');
+}
+
+function editItem(name){
+  const state = load();
+  const it = state.items[name];
+  if(!it) return alert('Item não encontrado');
+  document.getElementById('cadName').value = it.nome;
+  document.getElementById('cadCat').value = it.categoria||'';
+  document.getElementById('cadUn').value = it.unidade||'';
+  document.getElementById('cadCons').value = it.consumo_diario||'';
+  document.getElementById('cadMinR').value = it.minimo_restaurante||'';
+  document.getElementById('cadMinS').value = it.minimo_sede||'';
+  document.getElementById('cadQtyR').value = it.quantidade_restaurante||'';
+  document.getElementById('cadQtyS').value = it.quantidade_central||'';
+  window.scrollTo({top:100,behavior:'smooth'});
+}
+
+// salvar item
+document.getElementById('saveItemBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('cadName').value.trim();
+  if(!name) return alert('Nome é obrigatório');
+  const state = load();
+  const it = state.items[name] || { nome };
+  it.categoria = document.getElementById('cadCat').value.trim();
+  it.unidade = document.getElementById('cadUn').value.trim();
+  it.consumo_diario = Number(document.getElementById('cadCons').value) || 0;
+  it.minimo_restaurante = Number(document.getElementById('cadMinR').value) || 0;
+  it.minimo_sede = Number(document.getElementById('cadMinS').value) || 0;
+  it.quantidade_restaurante = Number(document.getElementById('cadQtyR').value) || 0;
+  it.quantidade_central = Number(document.getElementById('cadQtyS').value) || 0;
+  state.items[name] = it;
+  save(state);
+  addLog('Cadastro/Atualização de item: ' + name);
+  alert('Item salvo');
+  renderCurrent();
+});
+
+// export CSV
+function exportCSV(){
+  const state = load();
+  const headers = ['nome','categoria','unidade','consumo_diario','minimo_restaurante','minimo_sede','quantidade_restaurante','quantidade_central'];
+  const rows = Object.values(state.items).map(it=> headers.map(h=> JSON.stringify(it[h]===undefined? '': it[h])).join(','));
+  const csv = headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'estoque_export.csv'; a.click();
+  URL.revokeObjectURL(url);
+  addLog('Exportou dados CSV');
+}
+
+// importar CSV inicial
+async function importInitial(){
+  if(!confirm('Importar CSV inicial vai sobrescrever os dados locais atuais. Continuar?')) return;
+  const arr = await fetchInitialCSV();
+  if(!arr) return alert('CSV inicial não disponível');
+  const state = { items: {}, logs: [] };
+  arr.forEach(it=>{
+    state.items[it.nome] = {
+      nome: it.nome,
+      categoria: it.categoria || '',
+      unidade: it.unidade || '',
+      consumo_diario: Number(it.consumo_diario||0),
+      minimo_restaurante: Number(it.minimo_restaurante||0),
+      minimo_sede: Number(it.minimo_sede||0),
+      quantidade_restaurante: 0,
+      quantidade_central: 0
+    };
+  });
+  save(state);
+  addLog('Importou CSV inicial');
+  renderCurrent();
+}
+
+// resetar dados
+function resetData(){
+  if(!confirm('Resetar dados locais?')) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+
+// botões
+document.getElementById('importBtn').addEventListener('click', importInitial);
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('resetBtn').addEventListener('click', resetData);
+
+// tabs footer
+['Rest','Sede','Logs','Rel','Cad'].forEach(id=>{
+  document.getElementById('tab'+id).addEventListener('click', ()=>{ 
+    document.querySelectorAll('footer button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab'+id).classList.add('active');
+    renderCurrent();
+  });
+});
+
+// quick search
+document.getElementById('globalSearch').addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ e.target.value=''; renderCurrent(); } });
+
+// init
+init();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
