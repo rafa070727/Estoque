@@ -1,0 +1,40 @@
+nome,categoria,unidade,consumo_diario,minimo_restaurante,minimo_sede,quantidade_restaurante,quantidade_central
+Arroz,Mercearia,kg,8,24,120,0,0
+Feijão Mulato,Mercearia,kg,,, ,0,0
+Feijão Verde,Mercearia,kg,,, ,0,0
+Trigo,Mercearia,kg,,, ,0,0
+Café,Mercearia,un,,, ,0,0
+Calabresa,Proteína,kg,,, ,0,0
+Panko,Massas,kg,,, ,0,0
+Macarrão Linguine,Massas,kg,,, ,0,0
+Macarrão para Lasanha,Massas,kg,,, ,0,0
+Batata Palha,Massas,un,,, ,0,0
+Sal,Condimentos,kg,,, ,0,0
+Vinagre,Condimentos,l,,, ,0,0
+Vinho,Condimentos,l,,, ,0,0
+Caldo de Carne,Condimentos,un,,, ,0,0
+Caldo de Frango,Condimentos,un,,, ,0,0
+Champignon,Condimentos,lata,,, ,0,0
+Azeite,Óleos,l,,, ,0,0
+Óleo de Soja,Óleos,l,,, ,0,0
+Óleo de Algodão,Óleos,l,,, ,0,0
+Manteiga,Óleos,kg,,, ,0,0
+Leite,Laticínios,l,,, ,0,0
+Creme de Leite,Laticínios,un,,, ,0,0
+Leite Condensado,Laticínios,un,,, ,0,0
+Queijo Ralado,Laticínios,un,,, ,0,0
+Ovos de Galinha,Ovos,un,15,45,225,0,0
+Ovos de Codorna,Ovos,un,,, ,0,0
+Molho de Tomate,Molhos,un,,, ,0,0
+Demi-glace,Molhos,l,,, ,0,0
+Maionese,Molhos,kg,,, ,0,0
+Ketchup,Molhos,kg,,, ,0,0
+Amaciante,Limpeza,l,,, ,0,0
+Detergente,Limpeza,l,,, ,0,0
+Água Sanitária,Limpeza,l,,, ,0,0
+Sabão em Pó,Limpeza,kg,,, ,0,0
+Sabão em Pedra,Limpeza,un,,, ,0,0
+Bombril,Limpeza,un,,, ,0,0
+Bucha de Prato,Limpeza,un,,, ,0,0
+Vasilha para Viagem,Embalagens,un,,, ,0,0
+Vasilha para Lasanha,Embalagens,un,,, ,0,0
